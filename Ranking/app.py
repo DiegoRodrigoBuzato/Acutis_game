@@ -14,7 +14,7 @@ from models.models import db, Participante
 from utils.helpers import obter_ranking
 
 # ── Inicialização ────────────────────────────────────────────────
-socketio = SocketIO(cors_allowed_origins='*', async_mode='eventlet')
+socketio = SocketIO(cors_allowed_origins='*', async_mode='gevent')
 login_manager = LoginManager()
 
 
