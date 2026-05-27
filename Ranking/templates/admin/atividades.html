@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Atividades — Admin{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px; margin:0 auto;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 class="section-title"><span class="accent">ATIVIDADES</span> & QR CODES</h1>
+            <p class="text-muted">Crie atividades — cada uma gera um QR Code único</p>
+        </div>
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-outline btn-sm">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- CRIAR NOVA ATIVIDADE -->
+    <div class="card card-glow mb-3" style="border-color:rgba(30,64,255,.4);">
+        <h3 style="font-family:var(--font-display); font-size:1.1rem; letter-spacing:2px; margin-bottom:1rem;">
+            <i class="fas fa-plus-circle" style="color:var(--azul-neon);"></i> NOVA ATIVIDADE
+        </h3>
+        <form method="POST" action="{{ url_for('admin.criar_atividade') }}">
+            <div class="grid-3" style="align-items:end;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Nome</label>
+                    <input type="text" name="nome" class="form-control" placeholder="Ex: Arena Principal" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" name="descricao" class="form-control" placeholder="Ex: Visite a arena principal">
+                </div>
+                <div style="display:flex; gap:.5rem; align-items:end;">
+                    <div class="form-group" style="margin-bottom:0; flex:1;">
+                        <label class="form-label">Pontos</label>
+                        <input type="number" name="pontos" class="form-control" value="10" min="1" max="1000" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="height:44px;">
+                        <i class="fas fa-plus"></i> Criar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- LISTA DE ATIVIDADES -->
+    {% if atividades %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Pontos</th>
+                    <th>Scans</th>
+                    <th>QR Code</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in atividades %}
+                <tr>
+                    <td style="font-weight:600;">{{ a.nome }}</td>
+                    <td style="color:var(--text-muted); font-size:.85rem;">{{ a.descricao or '—' }}</td>
+                    <td>
+                        <span style="font-family:var(--font-display); font-weight:700; color:var(--azul-neon);">
+                            {{ a.pontos }}
+                        </span>
+                    </td>
+                    <td>{{ a.scans.count() }}</td>
+                    <td>
+                        <a href="/static/qrcodes/{{ a.codigo }}.png" target="_blank"
+                           style="color:var(--azul-claro); text-decoration:none; font-size:.8rem;">
+                            <i class="fas fa-qrcode"></i> Ver QR
+                        </a>
+                        <br>
+                        <code style="font-size:.6rem; color:var(--text-dim);">{{ a.codigo[:12] }}…</code>
+                    </td>
+                    <td>
+                        {% if a.ativa %}
+                        <span style="color:#22c55e; font-size:.8rem;">● Ativa</span>
+                        {% else %}
+                        <span style="color:var(--vermelho-neon); font-size:.8rem;">● Inativa</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:.3rem;">
+                            <a href="{{ url_for('admin.toggle_atividade', id=a.id) }}"
+                               class="btn btn-outline btn-sm" title="Ativar/Desativar">
+                                <i class="fas fa-power-off"></i>
+                            </a>
+                            <a href="{{ url_for('admin.excluir_atividade', id=a.id) }}"
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Excluir atividade {{ a.nome }}?');"
+                               title="Excluir">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card text-center text-muted" style="padding:3rem;">
+        <p style="font-size:2rem; margin-bottom:1rem;">📱</p>
+        <p>Nenhuma atividade criada ainda.</p>
+        <p>Use o formulário acima para criar atividades e gerar QR Codes.</p>
+    </div>
+    {% endif %}
+
+    <!-- Dica de uso -->
+    <div class="card mt-3" style="border-color:rgba(255,215,0,.2); background:rgba(255,215,0,.03);">
+        <p style="font-size:.85rem; color:var(--text-muted);">
+            💡 <strong style="color:gold;">Como funciona:</strong>
+            Ao criar uma atividade, um QR Code é gerado automaticamente.
+            Imprima e cole no local do evento. Participantes acessam
+            <code style="color:var(--azul-claro);">/scan/CÓDIGO</code> ao escanear.
+        </p>
+    </div>
+</div>
+{% endblock %}

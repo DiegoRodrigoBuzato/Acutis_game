@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Ranking — Acutis Game{% endblock %}
+
+{% block content %}
+<div style="max-width:900px; margin:0 auto;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 class="section-title" style="margin-bottom:.2rem;">
+                <span class="accent-red">RANKING</span> <span class="accent">GERAL</span>
+            </h1>
+            <p class="text-muted">{{ total }} participantes · Atualizado em tempo real</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--text-muted);">
+            <span style="width:8px; height:8px; background:var(--vermelho-neon); border-radius:50%; animation:pulse-blue 1.5s infinite; display:inline-block;"></span>
+            AO VIVO
+        </div>
+    </div>
+
+    <!-- Tabs: Geral vs Semanal -->
+    <div style="display:flex; gap:.5rem; margin-bottom:1.5rem;">
+        <button onclick="trocarRanking('geral')" id="tab-geral"
+                class="btn btn-primary btn-sm">🏆 Geral</button>
+        <button onclick="trocarRanking('semana')" id="tab-semana"
+                class="btn btn-outline btn-sm">📅 Semana</button>
+    </div>
+
+    <!-- TOP 3 DESTAQUE -->
+    {% if ranking %}
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem;">
+        {% for p in ranking[:3] %}
+        <div class="card text-center" style="
+            {% if p.posicao == 1 %}border-color:rgba(255,215,0,.5); background:linear-gradient(135deg,rgba(255,215,0,.08),var(--bg-card2));{% endif %}
+            {% if p.posicao == 2 %}border-color:rgba(192,192,192,.4);{% endif %}
+            {% if p.posicao == 3 %}border-color:rgba(205,127,50,.4);{% endif %}
+            order: {% if p.posicao == 1 %}2{% elif p.posicao == 2 %}1{% else %}3{% endif %};
+        ">
+            <div style="font-size:{% if p.posicao == 1 %}2.5rem{% else %}2rem{% endif %}; margin-bottom:.5rem;">
+                {% if p.posicao == 1 %}🥇{% elif p.posicao == 2 %}🥈{% else %}🥉{% endif %}
+            </div>
+            <img src="{{ p.avatar }}" style="
+                width:{% if p.posicao == 1 %}70px{% else %}55px{% endif %};
+                height:{% if p.posicao == 1 %}70px{% else %}55px{% endif %};
+                border-radius:50%; object-fit:cover;
+                border:3px solid {% if p.posicao == 1 %}gold{% elif p.posicao == 2 %}silver{% else %}#cd7f32{% endif %};
+                margin-bottom:.5rem;
+            " onerror="this.src='/static/img/default_avatar.png'">
+            <div style="font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:1px;">
+                {{ p.nickname }}
+            </div>
+            <div style="color:var(--text-muted); font-size:.8rem;">{{ p.nome }}</div>
+            <div style="font-family:var(--font-display); font-size:1.4rem; font-weight:700;
+                        color:{% if p.posicao == 1 %}gold{% else %}var(--azul-neon){% endif %};
+                        margin-top:.3rem;">
+                {{ p.pontos }} pts
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- LISTA COMPLETA -->
+    <div id="rankingCompleto">
+        {% for p in ranking %}
+        {% if p.posicao > 3 %}
+        <div class="ranking-item" id="rk-{{ p.id }}" data-pos="{{ p.posicao }}" data-pts="{{ p.pontos }}">
+            <div class="rank-pos" style="color:var(--text-muted); font-size:1rem;">#{{ p.posicao }}</div>
+            <img src="{{ p.avatar }}" class="rank-avatar"
+                 onerror="this.src='/static/img/default_avatar.png'">
+            <div class="rank-info">
+                <div class="rank-nickname">
+                    {{ p.nickname }}
+                    {% if current_user.is_authenticated and p.id == current_user.id %}
+                    <span style="color:var(--azul-neon); font-size:.7rem; margin-left:.3rem;">YOU</span>
+                    {% endif %}
+                </div>
+                <div class="rank-nome">{{ p.nome }}</div>
+                <div class="rank-badges">{{ p.badges|map(attribute='icone')|join('') }}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:.75rem;">
+                <span class="nivel-badge">LV {{ p.nivel }}</span>
+                {% if p.streak >= 2 %}
+                <span class="streak-badge">🔥 x{{ p.streak }}</span>
+                {% endif %}
+            </div>
+            <div class="rank-pontos">{{ p.pontos }}<span>pts</span></div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const socket = io();
+let modoAtual = 'geral';
+
+socket.on('connect', () => socket.emit('solicitar_ranking'));
+
+socket.on('ranking_update', (data) => {
+    if (data.ranking && modoAtual === 'geral') {
+        // Apenas atualiza a lista abaixo do top 3
+        // Para simplicidade, recarregar a lista completa
+        fetch('/api/ranking')
+            .then(r => r.json())
+            .then(data => atualizarListaCompleta(data.ranking));
+    }
+});
+
+function trocarRanking(modo) {
+    modoAtual = modo;
+    document.getElementById('tab-geral').className = modo === 'geral' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+    document.getElementById('tab-semana').className = modo === 'semana' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+
+    fetch(`/api/ranking?semana=${modo === 'semana'}`)
+        .then(r => r.json())
+        .then(data => atualizarListaCompleta(data.ranking));
+}
+
+function atualizarListaCompleta(ranking) {
+    const container = document.getElementById('rankingCompleto');
+    if (!container) return;
+
+    container.innerHTML = '';
+    ranking.filter(p => p.posicao > 3).forEach(p => {
+        const meuId = {% if current_user.is_authenticated %}{{ current_user.id }}{% else %}null{% endif %};
+        const isMe = p.id === meuId ? '<span style="color:var(--azul-neon); font-size:.7rem; margin-left:.3rem;">YOU</span>' : '';
+        container.innerHTML += `
+        <div class="ranking-item" id="rk-${p.id}" data-pos="${p.posicao}">
+            <div class="rank-pos" style="color:var(--text-muted); font-size:1rem;">#${p.posicao}</div>
+            <img src="${p.avatar}" class="rank-avatar" onerror="this.src='/static/img/default_avatar.png'">
+            <div class="rank-info">
+                <div class="rank-nickname">${p.nickname}${isMe}</div>
+                <div class="rank-nome">${p.nome}</div>
+            </div>
+            <span class="nivel-badge">LV ${p.nivel}</span>
+            <div class="rank-pontos">${p.pontos}<span>pts</span></div>
+        </div>`;
+    });
+}
+</script>
+{% endblock %}

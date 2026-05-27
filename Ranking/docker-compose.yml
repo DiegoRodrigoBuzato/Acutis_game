@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  acutis-game:
+    build: .
+    container_name: acutis_game_app
+    ports:
+      # Mapeia a porta 80 do servidor (HTTP) para a 5000 do app
+      - "80:5000"
+    volumes:
+      # Volumes para garantir que o SQLite, Avatares e QR Codes não sumam se o app reiniciar
+      - ./database:/app/database
+      - ./static/qrcodes:/app/static/qrcodes
+      - ./static/uploads/avatars:/app/static/uploads/avatars
+    environment:
+      - FLASK_ENV=production
+    restart: always

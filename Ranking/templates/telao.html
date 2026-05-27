@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📺 Telão — Acutis Game</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@400;700;800&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --azul: #1E40FF;
+            --azul-n: #3B82F6;
+            --azul-c: #60A5FA;
+            --red: #DC2626;
+            --red-n: #EF4444;
+            --bg: #050510;
+            --glow-b: 0 0 30px rgba(30, 64, 255, .7), 0 0 80px rgba(30, 64, 255, .3);
+            --glow-r: 0 0 30px rgba(220, 38, 38, .7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: #F0F4FF;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image:
+                linear-gradient(rgba(30, 64, 255, .04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 64, 255, .04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Canvas Fundo Retro */
+        #retroCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #050510;
+        }
+
+        .retro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(5, 5, 20, 0.1) 0%, rgba(5, 5, 20, 0.25) 100%);
+            pointer-events: none;
+        }
+
+        /* Layout principal */
+        .layout {
+            position: relative;
+            z-index: 2;
+            /* Elevado para ficar sobre o canvas e overlay */
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+            padding: 1.5rem 2rem;
+            gap: 1rem;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(30, 64, 255, .3);
+        }
+
+        .logo {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .logo .cross {
+            color: var(--azul-n);
+            margin-right: .3rem;
+        }
+
+        .logo .accent {
+            color: var(--azul-n);
+            text-shadow: var(--glow-b);
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: rgba(220, 38, 38, .15);
+            border: 1px solid var(--red);
+            border-radius: 100px;
+            padding: .3rem 1rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--red-n);
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--red-n);
+            border-radius: 50%;
+            animation: blink 1s ease infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        .timer {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3rem;
+            color: var(--azul-c);
+            margin-top: .3rem;
+        }
+
+        .total-badge {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            color: rgba(240, 244, 255, .6);
+            letter-spacing: 1px;
+        }
+
+        .total-badge strong {
+            color: var(--azul-c);
+            font-size: 1.2rem;
+        }
+
+        /* RANKING PRINCIPAL */
+        .ranking-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 1.2rem;
+            align-items: start;
+        }
+
+        /* TOP 3 */
+        .top3-container {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .top-card {
+            background: rgba(15, 20, 50, .8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 2px solid;
+            position: relative;
+            transition: all .4s ease;
+        }
+
+        .top-card.pos-1 {
+            border-color: rgba(255, 215, 0, .6);
+            background: linear-gradient(135deg, rgba(255, 215, 0, .08), rgba(15, 20, 50, .9));
+            box-shadow: 0 0 40px rgba(255, 215, 0, .15);
+            transform: scale(1.04);
+        }
+
+        .top-card.pos-2 {
+            border-color: rgba(192, 192, 192, .5);
+        }
+
+        .top-card.pos-3 {
+            border-color: rgba(205, 127, 50, .5);
+        }
+
+        .top-medal {
+            font-size: 3rem;
+            margin-bottom: .5rem;
+        }
+
+        .top-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid;
+            margin: 0 auto .6rem;
+            display: block;
+        }
+
+        .pos-1 .top-avatar {
+            border-color: gold;
+            box-shadow: 0 0 20px rgba(255, 215, 0, .4);
+        }
+
+        .pos-2 .top-avatar {
+            border-color: silver;
+        }
+
+        .pos-3 .top-avatar {
+            border-color: #cd7f32;
+        }
+
+        .top-nick {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .top-pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-top: .2rem;
+        }
+
+        .pos-1 .top-pts {
+            color: gold;
+            text-shadow: 0 0 20px rgba(255, 215, 0, .5);
+        }
+
+        .pos-2 .top-pts {
+            color: silver;
+        }
+
+        .pos-3 .top-pts {
+            color: #cd7f32;
+        }
+
+        /* LISTA RANKING (4-10) */
+        .rank-list {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .6rem;
+        }
+
+        .rank-row {
+            display: flex;
+            align-items: center;
+            gap: .8rem;
+            background: rgba(15, 20, 50, .7);
+            border: 1px solid rgba(30, 64, 255, .2);
+            border-radius: 10px;
+            padding: .65rem 1rem;
+            transition: all .4s ease;
+        }
+
+        .rank-row.rank-rising {
+            animation: glowBlue .8s ease;
+        }
+
+        .rank-row.rank-falling {
+            animation: glowRed .8s ease;
+        }
+
+        @keyframes glowBlue {
+            50% {
+                background: rgba(30, 64, 255, .25);
+                border-color: var(--azul-n);
+            }
+        }
+
+        @keyframes glowRed {
+            50% {
+                background: rgba(220, 38, 38, .15);
+                border-color: var(--red-n);
+            }
+        }
+
+        .rr-pos {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: rgba(240, 244, 255, .4);
+            min-width: 36px;
+        }
+
+        .rr-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(30, 64, 255, .4);
+            flex-shrink: 0;
+        }
+
+        .rr-nick {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        .rr-pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--azul-n);
+            white-space: nowrap;
+        }
+
+        /* FOOTER - Frase motivacional */
+        .footer-bar {
+            border-top: 1px solid rgba(30, 64, 255, .3);
+            padding-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .frase {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(240, 244, 255, .7);
+            font-style: italic;
+            text-align: center;
+        }
+
+        .frase strong {
+            color: var(--azul-c);
+        }
+
+        /* Notificação de ponto */
+        .ponto-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 9999;
+            background: linear-gradient(135deg, rgba(10, 20, 60, .97), rgba(30, 64, 255, .3));
+            border: 3px solid var(--azul-n);
+            border-radius: 20px;
+            padding: 2rem 4rem;
+            text-align: center;
+            box-shadow: var(--glow-b);
+            animation: popBig .5s cubic-bezier(.34, 1.56, .64, 1) forwards;
+        }
+
+        @keyframes popBig {
+            from {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+
+            80% {
+                transform: translate(-50%, -50%) scale(1.06);
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .ponto-popup .nick {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--azul-c);
+            letter-spacing: 2px;
+        }
+
+        .ponto-popup .pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            color: gold;
+            text-shadow: var(--glow-r);
+            line-height: 1;
+        }
+
+        .ponto-popup .atividade {
+            font-size: 1rem;
+            color: rgba(240, 244, 255, .6);
+            margin-top: .3rem;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="retroCanvas"></canvas>
+    <div class="retro-overlay"></div>
+
+    <div class="layout">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo">
+                <span class="cross">✝</span>
+                CARLO ACUTIS <span class="accent">GAME</span>
+            </div>
+            <div style="text-align:center; flex:1;">
+                <div class="frase" id="fraseHeader">
+                    <strong>"{{ frase }}"</strong>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="live-badge">
+                    <div class="live-dot"></div> RANKING AO VIVO
+                </div>
+                <div class="timer" id="timerDisplay"></div>
+                <div class="total-badge"><strong id="totalPart">{{ total }}</strong> participantes</div>
+            </div>
+        </header>
+
+        <!-- TOP 3 -->
+        <div>
+            <div class="top3-container" id="top3Container">
+                {% set top3 = ranking[:3] %}
+                {% set ordem = [1, 0, 2] %}
+                {% for idx in ordem %}
+                {% if top3|length > idx %}
+                {% set p = top3[idx] %}
+                <div class="top-card pos-{{ p.posicao }}" id="top-{{ p.id }}">
+                    <div class="top-medal">
+                        {% if p.posicao == 1 %}🥇{% elif p.posicao == 2 %}🥈{% else %}🥉{% endif %}
+                    </div>
+                    <img src="{{ p.avatar }}" class="top-avatar" onerror="this.src='/static/img/default_avatar.png'">
+                    <div class="top-nick">{{ p.nickname }}</div>
+                    <div class="top-pts">{{ p.pontos }} <span style="font-size:1rem;opacity:.5;">pts</span></div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- LISTA 4-10 -->
+            <div class="rank-list" id="rankList">
+                {% for p in ranking %}
+                {% if p.posicao > 3 and p.posicao <= 10 %} <div class="rank-row" id="row-{{ p.id }}"
+                    data-pos="{{ p.posicao }}">
+                    <div class="rr-pos">#{{ p.posicao }}</div>
+                    <img src="{{ p.avatar }}" class="rr-avatar" onerror="this.src='/static/img/default_avatar.png'">
+                    <div class="rr-nick">{{ p.nickname }}</div>
+                    {% if p.streak >= 2 %}
+                    <span style="color:#EF4444; font-size:.9rem;">🔥x{{ p.streak }}</span>
+                    {% endif %}
+                    <div class="rr-pts">{{ p.pontos }}pts</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer-bar">
+        <span style="color:var(--azul-n); font-size:1.3rem;">✝</span>
+        <div class="frase">
+            "Você foi feito para o Paraíso — não perca de vista o objetivo!"
+            — <strong>Carlo Acutis</strong>
+        </div>
+        <span style="color:var(--azul-n); font-size:1.3rem;">✝</span>
+    </footer>
+    </div>
+
+    <script>
+        // --- JOGO DE FUNDO RETRÔ (SUPER NINTENDO) ---
+        const canvas = document.getElementById('retroCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuração do Canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.imageSmoothingEnabled = false; // Preserva o estilo pixel art
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Definição dos Assets
+        const ASSETS = {
+            tileset: '/static/mapa_carlo/sao_carlo_tileset.png',
+            character: {
+                idle: [
+                    '/static/retro_carlo/frames/01.png',
+                    '/static/retro_carlo/frames/02.png',
+                    '/static/retro_carlo/frames/03.png',
+                    '/static/retro_carlo/frames/04.png'
+                ],
+                walk: [
+                    '/static/retro_carlo/frames/01.png',
+                    '/static/retro_carlo/frames/02.png',
+                    '/static/retro_carlo/frames/03.png',
+                    '/static/retro_carlo/frames/04.png'
+                ],
+                run: [
+                    '/static/retro_carlo/frames/05.png',
+                    '/static/retro_carlo/frames/06.png',
+                    '/static/retro_carlo/frames/07.png',
+                    '/static/retro_carlo/frames/08.png'
+                ],
+                jump: [
+                    '/static/retro_carlo/frames/p1.png',
+                    '/static/retro_carlo/frames/p2.png',
+                    '/static/retro_carlo/frames/p3.png',
+                    '/static/retro_carlo/frames/p4.png'
+                ],
+                wave: [
+                    '/static/retro_carlo/frames/a1.png',
+                    '/static/retro_carlo/frames/a2.png',
+                    '/static/retro_carlo/frames/a3.png'
+                ]
+            }
+        };
+
+        // Carregador de Assets
+        let loadedImages = null;
+        let assetsReady = false;
+
+        function findBackgroundColor(data) {
+            const colorCounts = {};
+            let maxCount = 0;
+            let mainColor = { r: 0, g: 0, b: 0, a: 0 };
+
+            // Amostrar pixels a cada 16 bytes (4 pixels) para performance
+            for (let i = 0; i < data.length; i += 16) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+
+                // Ignorar pixels já transparentes
+                if (a < 50) continue;
+
+                // Agrupar cores ligeiramente para tolerância
+                const key = `${Math.round(r / 8) * 8},${Math.round(g / 8) * 8},${Math.round(b / 8) * 8}`;
+
+                if (!colorCounts[key]) {
+                    colorCounts[key] = { count: 0, r, g, b, a };
+                }
+                colorCounts[key].count++;
+
+                if (colorCounts[key].count > maxCount) {
+                    maxCount = colorCounts[key].count;
+                    mainColor = colorCounts[key];
+                }
+            }
+            return mainColor;
+        }
+
+        function removeImageBackground(img) {
+            // Frames novos já possuem fundo transparente - retorna direto
+            return img;
+            const tempCanvas = document.createElement('canvas');
+            const width = img.naturalWidth || img.width;
+            const height = img.naturalHeight || img.height;
+            if (width === 0 || height === 0) return img;
+
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+
+            try {
+                const imgData = tempCtx.getImageData(0, 0, width, height);
+                const data = imgData.data;
+
+                // Encontrar a cor mais comum do sprite (que representa o fundo)
+                const bgColor = findBackgroundColor(data);
+
+                // Só removemos se a cor for opaca
+                if (bgColor.a > 200) {
+                    const targetR = bgColor.r;
+                    const targetG = bgColor.g;
+                    const targetB = bgColor.b;
+                    const tolerance = 25; // Tolerância leve para variações de compressão de cor
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        if (Math.abs(r - targetR) <= tolerance &&
+                            Math.abs(g - targetG) <= tolerance &&
+                            Math.abs(b - targetB) <= tolerance) {
+                            data[i + 3] = 0; // Torna transparente
+                        }
+                    }
+                    tempCtx.putImageData(imgData, 0, 0);
+                    return tempCanvas;
+                }
+            } catch (e) {
+                console.error("Erro ao aplicar transparência de fundo do sprite:", e);
+            }
+            return img;
+        }
+
+        function loadGameAssets() {
+            let totalAssets = 1; // Tileset
+            for (const key in ASSETS.character) {
+                totalAssets += ASSETS.character[key].length;
+            }
+
+            let loadedAssets = 0;
+            function assetLoaded() {
+                loadedAssets++;
+                if (loadedAssets === totalAssets) {
+                    assetsReady = true;
+                    initGame();
+                }
+            }
+
+            const images = {
+                tileset: new Image(),
+                character: {
+                    idle: [],
+                    walk: [],
+                    run: [],
+                    jump: [],
+                    wave: []
+                }
+            };
+
+            images.tileset.crossOrigin = "anonymous";
+            images.tileset.src = ASSETS.tileset;
+            images.tileset.onload = assetLoaded;
+            images.tileset.onerror = assetLoaded;
+
+            for (const key in ASSETS.character) {
+                ASSETS.character[key].forEach((src, idx) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.src = src;
+                    img.onload = () => {
+                        images.character[key][idx] = removeImageBackground(img);
+                        assetLoaded();
+                    };
+                    img.onerror = assetLoaded;
+                    images.character[key][idx] = img;
+                });
+            }
+
+            loadedImages = images;
+        }
+
+        // Elementos do Jogo
+        let scrollX = 0;
+        let baseScrollSpeed = 3.5;
+        let scrollSpeed = baseScrollSpeed;
+
+        // Estrelas Parallax
+        const stars = [];
+        for (let i = 0; i < 40; i++) {
+            stars.push({
+                x: Math.random() * 2000,
+                y: Math.random() * 300,
+                size: 1 + Math.random() * 2,
+                twinkleSpeed: 0.02 + Math.random() * 0.05,
+                twinkleTime: Math.random() * Math.PI
+            });
+        }
+
+        // Nuvens Parallax
+        const clouds = [];
+        for (let i = 0; i < 5; i++) {
+            clouds.push({
+                x: Math.random() * 2000,
+                y: 50 + Math.random() * 100,
+                width: 100 + Math.random() * 100,
+                height: 30 + Math.random() * 20,
+                speed: 0.2 + Math.random() * 0.3
+            });
+        }
+
+        // Montanhas Parallax
+        const mountains = [];
+        for (let i = 0; i < 6; i++) {
+            mountains.push({
+                x: i * 350,
+                width: 300 + Math.random() * 150,
+                height: 150 + Math.random() * 100
+            });
+        }
+
+        // Skyline de São Carlo (Edifícios + Igreja)
+        const skyline = [];
+        for (let i = 0; i < 15; i++) {
+            const isChurch = i % 4 === 0;
+            skyline.push({
+                x: i * 180,
+                width: 80 + Math.random() * 60,
+                height: isChurch ? 220 : 100 + Math.random() * 80,
+                isChurch: isChurch,
+                color: `hsl(245, 30%, ${18 + (i % 3) * 4}%)`
+            });
+        }
+
+        // Personagem
+        const player = {
+            x: 150,
+            y: 0,
+            width: 150,  // Frame normalizado 150x200
+            height: 200,
+            vy: 0,
+            gravity: 0.6,
+            isGrounded: false,
+            state: 'run', // idle, walk, run, jump, wave
+            frameIndex: 0,
+            frameTimer: 0,
+
+            update(dt) {
+                const groundY = canvas.height - 128 + 20 - this.height;
+
+                // Aplicar Gravidade
+                if (!this.isGrounded) {
+                    this.vy += this.gravity;
+                    this.y += this.vy;
+                    if (this.y >= groundY) {
+                        this.y = groundY;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        if (this.state === 'jump') {
+                            this.state = speechBubble ? 'wave' : 'run';
+                            this.frameIndex = 0;
+                        }
+                    }
+                } else {
+                    this.y = groundY;
+                }
+
+                // Atualizar Animação
+                this.frameTimer += dt;
+                const frames = loadedImages.character[this.state];
+                let interval = 120;
+                if (this.state === 'run') interval = 80;
+                if (this.state === 'walk') interval = 150;
+                if (this.state === 'idle') interval = 250;
+                if (this.state === 'wave') interval = 180;
+                if (this.state === 'jump') interval = 100;
+
+                if (this.frameTimer >= interval) {
+                    this.frameTimer = 0;
+                    this.frameIndex = (this.frameIndex + 1) % (frames.length || 1);
+                }
+            },
+
+            draw() {
+                const frames = loadedImages.character[this.state];
+                const img = frames[this.frameIndex] || (frames.length > 0 ? frames[0] : null);
+                if (img) {
+                    ctx.drawImage(img, this.x, this.y, this.width, this.height);
+                }
+            },
+
+            jump() {
+                if (this.isGrounded) {
+                    this.vy = -12.5;
+                    this.isGrounded = false;
+                    this.state = 'jump';
+                    this.frameIndex = 0;
+                    this.frameTimer = 0;
+                }
+            }
+        };
+
+        // Obstáculos e Moedas
+        let obstacles = [];
+        let coins = [];
+        let particles = [];
+        let floaters = [];
+        let obstacleSpawnTimer = 0;
+        let coinSpawnTimer = 0;
+
+        function spawnObstacle() {
+            obstacles.push({
+                x: canvas.width + 100,
+                y: canvas.height - 128 + 20 - 64,
+                width: 48,
+                height: 48,
+                jumpTriggered: false
+            });
+        }
+
+        function spawnCoinArch() {
+            const startX = canvas.width + 100;
+            const peakY = canvas.height - 240;
+            const numCoins = 4;
+            for (let i = 0; i < numCoins; i++) {
+                // Fórmula de parábola simples para formar um arco
+                const t = i / (numCoins - 1);
+                const cy = peakY + 60 * Math.pow(t - 0.5, 2) * 4;
+                coins.push({
+                    x: startX + i * 45,
+                    y: cy,
+                    width: 24,
+                    height: 24,
+                    collected: false
+                });
+            }
+        }
+
+        // Fala do Carlo & Eventos
+        let speechBubble = null; // { text: "...", timer: 3000 }
+
+        function triggerCarloWave(nickname, pontos) {
+            player.state = 'wave';
+            player.frameIndex = 0;
+            speechBubble = {
+                text: `Boa, ${nickname}! +${pontos} XP! ⚡`,
+                timer: 3500
+            };
+
+            // Confetes pixels retrô
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: player.x + player.width / 2 + (Math.random() - 0.5) * 80,
+                    y: player.y - 20 - Math.random() * 40,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: -4 - Math.random() * 4,
+                    size: 4 + Math.random() * 4,
+                    color: ['#FFD700', '#FF8C00', '#3B82F6', '#EF4444', '#00FF00'][Math.floor(Math.random() * 5)],
+                    gravity: 0.2,
+                    life: 1.0,
+                    decay: 0.015
+                });
+            }
+        }
+
+        // Loop Principal
+        let lastTime = 0;
+        let coinRotateTick = 0;
+
+        function initGame() {
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(time) {
+            let dt = time - lastTime;
+            if (dt > 100) dt = 100; // Limite para evitar pulos gigantes em abas inativas
+            lastTime = time;
+
+            updateGame(dt);
+            drawGame();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGame(dt) {
+            // Definir velocidade do scroll
+            if (speechBubble) {
+                scrollSpeed = 0; // Para tudo para Carlo comemorar
+            } else {
+                if (player.state === 'run') scrollSpeed = baseScrollSpeed;
+                else if (player.state === 'walk') scrollSpeed = baseScrollSpeed * 0.5;
+                else if (player.state === 'idle' || player.state === 'wave') scrollSpeed = 0;
+                else scrollSpeed = baseScrollSpeed;
+            }
+
+            scrollX += scrollSpeed;
+            coinRotateTick++;
+
+            // Atualizar Balão de Fala
+            if (speechBubble) {
+                speechBubble.timer -= dt;
+                if (speechBubble.timer <= 0) {
+                    speechBubble = null;
+                    if (player.state === 'wave') {
+                        player.state = 'run';
+                    }
+                }
+            }
+
+            // Atualizar Jogador
+            player.update(dt);
+
+            // Spawners de Objetos (apenas se estiver correndo/movendo)
+            if (scrollSpeed > 0) {
+                obstacleSpawnTimer += dt;
+                if (obstacleSpawnTimer > 3500 + Math.random() * 2500) {
+                    spawnObstacle();
+                    obstacleSpawnTimer = 0;
+                }
+
+                coinSpawnTimer += dt;
+                if (coinSpawnTimer > 4000 + Math.random() * 3000) {
+                    spawnCoinArch();
+                    coinSpawnTimer = 0;
+                }
+            }
+
+            // Atualizar Obstáculos
+            obstacles.forEach((obs) => {
+                obs.x -= scrollSpeed;
+
+                // Pulo Automático: Carlo detecta obstáculo próximo
+                if (obs.x > player.x && obs.x < player.x + 120 && !obs.jumpTriggered && player.isGrounded) {
+                    player.jump();
+                    obs.jumpTriggered = true;
+                }
+            });
+            obstacles = obstacles.filter(obs => obs.x > -100);
+
+            // Atualizar Moedas
+            coins.forEach((coin) => {
+                coin.x -= scrollSpeed;
+
+                // Detecção de Coleta
+                if (!coin.collected) {
+                    const px = player.x + player.width / 2;
+                    const py = player.y + player.height / 2;
+                    const cx = coin.x + coin.width / 2;
+                    const cy = coin.y + coin.height / 2;
+                    const dist = Math.hypot(px - cx, py - cy);
+                    if (dist < 40) {
+                        coin.collected = true;
+
+                        // Criar explosão de poeira dourada
+                        for (let i = 0; i < 6; i++) {
+                            particles.push({
+                                x: coin.x + coin.width / 2,
+                                y: coin.y + coin.height / 2,
+                                vx: (Math.random() - 0.5) * 3,
+                                vy: (Math.random() - 0.5) * 3,
+                                size: 3 + Math.random() * 3,
+                                color: '#FFD700',
+                                gravity: 0.1,
+                                life: 1.0,
+                                decay: 0.03
+                            });
+                        }
+
+                        // Texto flutuante
+                        floaters.push({
+                            x: coin.x + coin.width / 2,
+                            y: coin.y,
+                            text: '+10 XP',
+                            vy: -1.2,
+                            color: '#FFD700',
+                            life: 1.0,
+                            decay: 0.02
+                        });
+                    }
+                }
+            });
+            coins = coins.filter(coin => coin.x > -50 && !coin.collected);
+
+            // Atualizar Partículas
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.gravity) p.vy += p.gravity;
+                p.life -= p.decay;
+            });
+            particles = particles.filter(p => p.life > 0);
+
+            // Atualizar Textos Flutuantes
+            floaters.forEach(f => {
+                f.y += f.vy;
+                f.life -= f.decay;
+            });
+            floaters = floaters.filter(f => f.life > 0);
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Céu Super Mario World (azul diurno vibrante)
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.75);
+            skyGrad.addColorStop(0, '#5C94FC'); // Azul claro Mario
+            skyGrad.addColorStop(0.5, '#80BCFF'); // Azul médio
+            skyGrad.addColorStop(1, '#B8E4FF'); // Quase branco
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Faixa de grama horizon
+            ctx.fillStyle = '#5AC54F';
+            ctx.fillRect(0, canvas.height - 128, canvas.width, 128);
+
+            // 2. Sol Mario no canto
+            ctx.fillStyle = '#FFDE00';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 100, 80, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFB800';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 100, 80, 34, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Nuvens estilo Mario (pixel fluffy)
+            function drawMarioCloud(cx, cy, w) {
+                const h = w * 0.55;
+                ctx.fillStyle = '#FFFFFF';
+                // Base
+                ctx.fillRect(cx + w * 0.1, cy + h * 0.5, w * 0.8, h * 0.5);
+                // Topo
+                ctx.beginPath();
+                ctx.arc(cx + w * 0.3, cy + h * 0.5, h * 0.35, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath();
+                ctx.arc(cx + w * 0.5, cy + h * 0.25, h * 0.4, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath();
+                ctx.arc(cx + w * 0.7, cy + h * 0.5, h * 0.3, 0, Math.PI * 2); ctx.fill();
+                // Sombra
+                ctx.fillStyle = 'rgba(100,140,255,0.25)';
+                ctx.fillRect(cx + w * 0.1, cy + h * 0.85, w * 0.8, h * 0.15);
+            }
+            clouds.forEach(cloud => {
+                const cx = (cloud.x - scrollX * 0.12) % (canvas.width + cloud.width + 100);
+                const rx = cx < -(cloud.width + 100) ? cx + canvas.width + cloud.width + 200 : cx;
+                drawMarioCloud(rx, cloud.y, cloud.width);
+            });
+
+            // 4. Colinas verdes estilo Mario World
+            mountains.forEach((mount, i) => {
+                const mx = (mount.x - scrollX * 0.18) % (canvas.width + 400);
+                const rx = mx < -400 ? mx + canvas.width + 400 : mx;
+                const groundLine = canvas.height - 128;
+                // Colina principal
+                ctx.fillStyle = '#5AC54F';
+                ctx.beginPath();
+                ctx.arc(rx + mount.width / 2, groundLine, mount.width / 2, Math.PI, 0);
+                ctx.closePath();
+                ctx.fill();
+                // Borda escura
+                ctx.strokeStyle = '#4AA03F';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(rx + mount.width / 2, groundLine, mount.width / 2, Math.PI, 0);
+                ctx.stroke();
+                // Destaque claro no topo
+                ctx.fillStyle = '#74D768';
+                ctx.beginPath();
+                ctx.arc(rx + mount.width / 2 - mount.width * 0.1, groundLine - mount.width * 0.35, mount.width * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 5. Canos e blocos decorativos estilo Mario World
+            skyline.forEach((building, i) => {
+                const bx = (building.x - scrollX * 0.4) % (canvas.width + 200);
+                const rx = bx < -200 ? bx + canvas.width + 200 : bx;
+                const groundLine = canvas.height - 128;
+
+                if (building.isChurch) {
+                    // Cano verde Mario
+                    const pipeW = 52, pipeH = building.height;
+                    const topH = 20;
+                    // Corpo
+                    ctx.fillStyle = '#5AC54F';
+                    ctx.fillRect(rx + 4, groundLine - pipeH, pipeW - 8, pipeH);
+                    // Topo
+                    ctx.fillStyle = '#74D768';
+                    ctx.fillRect(rx, groundLine - pipeH - topH, pipeW, topH);
+                    // Sombra interna
+                    ctx.fillStyle = '#4AA03F';
+                    ctx.fillRect(rx + pipeW - 14, groundLine - pipeH, 6, pipeH);
+                    ctx.fillRect(rx + pipeW - 14, groundLine - pipeH - topH, 6, topH);
+                } else {
+                    // Bloco ? estilo Mario
+                    const bsize = 48;
+                    const by = groundLine - building.height;
+                    ctx.fillStyle = '#E39F18';
+                    ctx.fillRect(rx, by, bsize, bsize);
+                    ctx.fillStyle = '#C8860A';
+                    ctx.fillRect(rx, by + bsize - 6, bsize, 6); // sombra baixo
+                    ctx.fillRect(rx + bsize - 6, by, 6, bsize); // sombra direita
+                    ctx.fillStyle = '#F5C842';
+                    ctx.fillRect(rx + 4, by + 4, bsize - 10, 6); // highlight
+                    ctx.fillStyle = '#7A4F00';
+                    ctx.font = 'bold 22px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('?', rx + bsize / 2, by + bsize * 0.65);
+                }
+            });
+
+            // 6. Chão estilo Super Mario World (verde + terra)
+            const tileSize = 64;
+            const offsetX = Math.floor(scrollX) % tileSize;
+            const groundTop = canvas.height - 128;
+
+            for (let tx = -1; tx < Math.ceil(canvas.width / tileSize) + 2; tx++) {
+                const x = tx * tileSize - offsetX;
+                // Tile superior (grama)
+                ctx.fillStyle = '#5AC54F';
+                ctx.fillRect(x, groundTop, tileSize, 24);
+                ctx.fillStyle = '#74D768';
+                ctx.fillRect(x + 4, groundTop + 4, tileSize - 8, 8); // highlight grama
+                ctx.fillStyle = '#4AA03F';
+                ctx.fillRect(x, groundTop + 20, tileSize, 4); // sombra
+                // Tile terra
+                ctx.fillStyle = '#C88B3A';
+                ctx.fillRect(x, groundTop + 24, tileSize, 104);
+                // Grade da terra
+                ctx.strokeStyle = '#B07828';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, groundTop + 24, tileSize, 64);
+                ctx.strokeRect(x, groundTop + 88, tileSize, 40);
+            }
+
+            // 7. Obstáculos estilo bloco tijolo Mario
+            obstacles.forEach(obs => {
+                // Bloco tijolo
+                ctx.fillStyle = '#C8773A';
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.fillStyle = '#E09050';
+                ctx.fillRect(obs.x + 2, obs.y + 2, obs.width - 4, 12);
+                ctx.fillRect(obs.x + 2, obs.y + 20, obs.width - 4, 12);
+                ctx.fillRect(obs.x + 2, obs.y + 38, obs.width / 2 - 4, 10);
+                ctx.fillStyle = '#A05020';
+                ctx.fillRect(obs.x, obs.y + 14, obs.width, 6);
+                ctx.fillRect(obs.x, obs.y + 32, obs.width, 6);
+                ctx.fillRect(obs.x + obs.width / 2, obs.y + 38, 4, 10);
+            });
+
+            // 8. Renderizar Moedas
+            coins.forEach(coin => {
+                ctx.save();
+                ctx.translate(coin.x + coin.width / 2, coin.y + coin.height / 2);
+                const scaleX = Math.abs(Math.sin(coinRotateTick * 0.08));
+                ctx.scale(scaleX, 1);
+
+                ctx.fillStyle = '#FFD700';
+                ctx.strokeStyle = '#B8860B';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(-coin.width / 6, -coin.height / 6, coin.width / 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // 9. Renderizar Carlo (Player)
+            if (assetsReady) {
+                player.draw();
+            } else {
+                ctx.fillStyle = '#3B82F6';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+
+            // 10. Renderizar Balão de Fala do Carlo
+            if (speechBubble) {
+                ctx.save();
+                ctx.font = 'bold 15px "Share Tech Mono", monospace';
+                const textWidth = ctx.measureText(speechBubble.text).width;
+                const padding = 12;
+                const w = textWidth + padding * 2;
+                const h = 36;
+                const bx = player.x + player.width / 2 - w / 2;
+                const by = player.y - h - 18;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+
+                drawBubbleRect(ctx, bx, by, w, h, 8);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.moveTo(player.x + player.width / 2 - 8, by + h);
+                ctx.lineTo(player.x + player.width / 2 + 8, by + h);
+                ctx.lineTo(player.x + player.width / 2, by + h + 8);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(player.x + player.width / 2 - 8, by + h);
+                ctx.lineTo(player.x + player.width / 2, by + h + 8);
+                ctx.lineTo(player.x + player.width / 2 + 8, by + h);
+                ctx.stroke();
+
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(speechBubble.text, bx + w / 2, by + h / 2);
+                ctx.restore();
+            }
+
+            // 11. Renderizar Efeitos de Partículas
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            // 12. Renderizar Textos Flutuantes
+            ctx.save();
+            ctx.font = 'bold 14px "Share Tech Mono", monospace';
+            ctx.textAlign = 'center';
+            floaters.forEach(f => {
+                ctx.fillStyle = f.color;
+                ctx.globalAlpha = f.life;
+                ctx.fillText(f.text, f.x, f.y);
+            });
+            ctx.restore();
+        }
+
+        function drawBubbleRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function fillRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Iniciar carregamento dos assets do jogo
+        loadGameAssets();
+
+        // Timer
+        function atualizarTimer() {
+            const el = document.getElementById('timerDisplay');
+            if (!el) return;
+            const agora = new Date();
+            el.textContent = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        setInterval(atualizarTimer, 1000);
+        atualizarTimer();
+
+        // SocketIO
+        const socket = io();
+        let posicoesAnt = {};
+
+        document.querySelectorAll('[data-pos]').forEach(el => {
+            const id = el.id.replace('row-', '').replace('top-', '');
+            posicoesAnt[id] = parseInt(el.dataset.pos);
+        });
+
+        socket.on('connect', () => socket.emit('solicitar_ranking'));
+
+        socket.on('ranking_update', (data) => {
+            if (data.ranking) atualizarTelao(data.ranking, data.total);
+            if (data.evento && data.evento.participante_id) {
+                mostrarPopupPonto(data.evento);
+                if (data.evento.nova_posicao <= 3) dispararConfete();
+
+                // Acionar a animação do Carlo acenando e balão de fala
+                if (assetsReady) {
+                    triggerCarloWave(data.evento.participante, data.evento.pontos);
+                }
+            }
+        });
+
+        function atualizarTelao(ranking, total) {
+            // Atualizar total
+            const totalEl = document.getElementById('totalPart');
+            if (totalEl && total) totalEl.textContent = total;
+
+            // Top 3
+            const top3Cont = document.getElementById('top3Container');
+            const top3 = ranking.filter(p => p.posicao <= 3);
+            const order = [1, 0, 2]; // 2º, 1º, 3º para efeito podium
+            top3Cont.innerHTML = '';
+            order.forEach(idx => {
+                if (!top3[idx]) return;
+                const p = top3[idx];
+                const medalha = p.posicao === 1 ? '🥇' : p.posicao === 2 ? '🥈' : '🥉';
+                top3Cont.innerHTML += `
+        <div class="top-card pos-${p.posicao}" id="top-${p.id}">
+            <div class="top-medal">${medalha}</div>
+            <img src="${p.avatar}" class="top-avatar" onerror="this.src='/static/img/default_avatar.png'">
+            <div class="top-nick">${p.nickname}</div>
+            <div class="top-pts">${p.pontos} <span style="font-size:1rem;opacity:.5;">pts</span></div>
+        </div>`;
+            });
+
+            // Lista 4-10
+            const lista = document.getElementById('rankList');
+            lista.innerHTML = '';
+            ranking.filter(p => p.posicao > 3 && p.posicao <= 10).forEach(p => {
+                const antPos = posicoesAnt[p.id];
+                const aniClass = antPos && p.posicao < antPos ? 'rank-rising' : antPos && p.posicao > antPos ? 'rank-falling' : '';
+                lista.innerHTML += `
+        <div class="rank-row ${aniClass}" id="row-${p.id}" data-pos="${p.posicao}">
+            <div class="rr-pos">#${p.posicao}</div>
+            <img src="${p.avatar}" class="rr-avatar" onerror="this.src='/static/img/default_avatar.png'">
+            <div class="rr-nick">${p.nickname}</div>
+            ${p.streak >= 2 ? `<span style="color:#EF4444;font-size:.9rem;">🔥x${p.streak}</span>` : ''}
+            <div class="rr-pts">${p.pontos}pts</div>
+        </div>`;
+                posicoesAnt[p.id] = p.posicao;
+            });
+        }
+
+        function mostrarPopupPonto(ev) {
+            const popup = document.createElement('div');
+            popup.className = 'ponto-popup';
+            popup.innerHTML = `
+        <div class="nick">⚡ ${ev.participante.toUpperCase()} ⚡</div>
+        <div class="pts">+${ev.pontos}</div>
+        <div class="atividade">${ev.atividade}</div>
+        ${ev.streak >= 3 ? `<div style="color:#EF4444;font-size:1.2rem;margin-top:.3rem;">🔥 STREAK x${ev.streak}</div>` : ''}
+        ${ev.nova_posicao <= 3 ? `<div style="color:gold;font-size:1.1rem;margin-top:.3rem;">🏆 ENTROU NO TOP 3!</div>` : ''}
+    `;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 4000);
+        }
+
+        function dispararConfete() {
+            const colors = ['#1E40FF', '#3B82F6', '#DC2626', '#EF4444', '#FFD700', '#fff'];
+            [.25, .5, .75].forEach(x => {
+                setTimeout(() => {
+                    confetti({ particleCount: 60, spread: 100, origin: { x, y: .4 }, colors });
+                }, x * 600);
+            });
+        }
+
+        // Fullscreen ao clicar
+        document.body.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            }
+        });
+    </script>
+</body>
+
+</html>

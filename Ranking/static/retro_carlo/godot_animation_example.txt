@@ -1,0 +1,24 @@
+
+# Exemplo de animações para Godot
+
+Idle:
+idle_1.png
+idle_2.png
+idle_3.png
+
+Walk:
+walk_1.png
+walk_2.png
+walk_3.png
+walk_4.png
+
+Run:
+run_1.png
+run_2.png
+run_3.png
+run_4.png
+
+Jump:
+jump_1.png
+jump_2.png
+jump_3.png

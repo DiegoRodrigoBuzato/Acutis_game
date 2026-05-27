@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Acutis Game{% endblock %}</title>
+
+    <!-- Google Fonts: Rajdhani (display gamer) + Exo 2 (corpo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Partículas de fundo animadas -->
+    <div class="bg-particles" id="bgParticles"></div>
+    <!-- Grade decorativa -->
+    <div class="grid-overlay"></div>
+
+    <!-- ── NAVBAR ─────────────────────────────────────────────── -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="nav-logo">
+                <span class="logo-cross">✝</span>
+                <span class="logo-text">ACUTIS <span class="accent">GAME</span></span>
+            </a>
+
+            <div class="nav-links">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.dashboard') }}" class="nav-link">
+                        <i class="fas fa-gamepad"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('main.ranking') }}" class="nav-link">
+                        <i class="fas fa-trophy"></i> Ranking
+                    </a>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.panel') }}" class="nav-link nav-admin">
+                        <i class="fas fa-cog"></i> Admin
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('main.perfil', nickname=current_user.nickname) }}" class="nav-link nav-user">
+                        <img src="{{ current_user.avatar or '/static/img/default_avatar.png' }}" class="nav-avatar" alt="Avatar">
+                        {{ current_user.nickname }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link nav-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                    <a href="{{ url_for('auth.cadastro') }}" class="btn-nav-primary">Participar</a>
+                {% endif %}
+            </div>
+
+            <!-- Menu mobile -->
+            <button class="nav-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Menu mobile dropdown -->
+        <div class="nav-mobile" id="navMobile">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-gamepad"></i> Dashboard</a>
+                <a href="{{ url_for('main.ranking') }}"><i class="fas fa-trophy"></i> Ranking</a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.panel') }}"><i class="fas fa-cog"></i> Admin</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.cadastro') }}">Cadastrar</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- ── FLASH MESSAGES ─────────────────────────────────────── -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container" id="flashContainer">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">
+                <span>{{ message }}</span>
+                <button onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- ── CONTEÚDO PRINCIPAL ─────────────────────────────────── -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ── FOOTER ─────────────────────────────────────────────── -->
+    <footer class="footer">
+        <p>
+            <span class="footer-cross">✝</span>
+            Acutis Game &mdash; <em>"Você foi feito para o Paraíso!"</em>
+            &mdash; Carlo Acutis (1991–2006)
+        </p>
+    </footer>
+
+    <!-- ── SCRIPTS ────────────────────────────────────────────── -->
+    <!-- Socket.IO para tempo real -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Canvas Confetti para celebrações -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <script>
+        // Criar partículas de fundo
+        (function createParticles() {
+            const container = document.getElementById('bgParticles');
+            if (!container) return;
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.cssText = `
+                    left: ${Math.random() * 100}%;
+                    width: ${2 + Math.random() * 4}px;
+                    height: ${2 + Math.random() * 4}px;
+                    animation-delay: ${Math.random() * 8}s;
+                    animation-duration: ${6 + Math.random() * 8}s;
+                    opacity: ${0.1 + Math.random() * 0.4};
+                `;
+                container.appendChild(p);
+            }
+        })();
+
+        function toggleMobileMenu() {
+            document.getElementById('navMobile').classList.toggle('open');
+        }
+
+        // Auto-fechar flashes após 5s
+        setTimeout(() => {
+            document.querySelectorAll('.flash').forEach(f => f.remove());
+        }, 5000);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

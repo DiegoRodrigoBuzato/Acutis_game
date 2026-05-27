@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 VENCEDOR — Acutis Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --azul: #1E40FF; --azul-n: #3B82F6; --azul-c: #60A5FA;
+            --red: #DC2626; --red-n: #EF4444;
+            --bg: #050510;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: #F0F4FF;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            background-image:
+                linear-gradient(rgba(30,64,255,.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30,64,255,.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .particle {
+            position: absolute; bottom: -10px;
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: .8; }
+            90% { opacity: .2; }
+            100% { transform: translateY(-110vh); opacity: 0; }
+        }
+
+        .winner-container {
+            position: relative; z-index: 1;
+            text-align: center;
+            animation: fadeInScale 1.5s ease forwards;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .crown { font-size: 6rem; margin-bottom: 1rem; animation: bounce 2s ease infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .winner-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            color: rgba(255,215,0,.7);
+            margin-bottom: 1rem;
+        }
+
+        .winner-avatar {
+            width: 150px; height: 150px;
+            border-radius: 50%; object-fit: cover;
+            border: 4px solid gold;
+            box-shadow: 0 0 40px rgba(255,215,0,.5), 0 0 80px rgba(255,215,0,.2);
+            margin: 0 auto 1.5rem;
+            display: block;
+            animation: pulseGold 2s ease infinite;
+        }
+        @keyframes pulseGold {
+            0%, 100% { box-shadow: 0 0 40px rgba(255,215,0,.5); }
+            50% { box-shadow: 0 0 60px rgba(255,215,0,.8), 0 0 100px rgba(255,215,0,.3); }
+        }
+
+        .winner-nick {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            color: gold;
+            text-shadow: 0 0 30px rgba(255,215,0,.6);
+            margin-bottom: .5rem;
+        }
+
+        .winner-nome {
+            font-size: 1.3rem;
+            color: rgba(240,244,255,.6);
+            margin-bottom: 1rem;
+        }
+
+        .winner-pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--azul-n);
+            text-shadow: 0 0 30px rgba(30,64,255,.7);
+            line-height: 1;
+        }
+        .winner-pts span {
+            font-size: 1.5rem;
+            color: rgba(240,244,255,.4);
+        }
+
+        .podium {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .podium-card {
+            background: rgba(15,20,50,.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 2px solid rgba(30,64,255,.3);
+            min-width: 140px;
+        }
+        .podium-card.silver { border-color: rgba(192,192,192,.5); }
+        .podium-card.bronze { border-color: rgba(205,127,50,.5); }
+        .podium-medal { font-size: 2rem; margin-bottom: .5rem; }
+        .podium-nick {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .podium-pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .podium-card.silver .podium-pts { color: silver; }
+        .podium-card.bronze .podium-pts { color: #cd7f32; }
+
+        .footer-quote {
+            margin-top: 3rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            color: rgba(240,244,255,.4);
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+        .footer-quote strong { color: var(--azul-c); }
+    </style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+
+<div class="winner-container">
+    {% if ranking and ranking|length > 0 %}
+    {% set vencedor = ranking[0] %}
+
+    <div class="crown">👑</div>
+    <div class="winner-label">✝ VENCEDOR DO EVENTO ✝</div>
+
+    <img src="{{ vencedor.avatar }}" class="winner-avatar"
+         onerror="this.src='/static/img/default_avatar.png'">
+
+    <div class="winner-nick">{{ vencedor.nickname }}</div>
+    <div class="winner-nome">{{ vencedor.nome }}</div>
+    <div class="winner-pts">{{ vencedor.pontos }} <span>PONTOS</span></div>
+
+    <!-- Pódio 2º e 3º -->
+    {% if ranking|length > 1 %}
+    <div class="podium">
+        {% if ranking|length > 1 %}
+        <div class="podium-card silver">
+            <div class="podium-medal">🥈</div>
+            <img src="{{ ranking[1].avatar }}" style="width:50px;height:50px;border-radius:50%;
+                 border:2px solid silver;object-fit:cover;margin-bottom:.5rem;"
+                 onerror="this.src='/static/img/default_avatar.png'">
+            <div class="podium-nick">{{ ranking[1].nickname }}</div>
+            <div class="podium-pts">{{ ranking[1].pontos }} pts</div>
+        </div>
+        {% endif %}
+        {% if ranking|length > 2 %}
+        <div class="podium-card bronze">
+            <div class="podium-medal">🥉</div>
+            <img src="{{ ranking[2].avatar }}" style="width:50px;height:50px;border-radius:50%;
+                 border:2px solid #cd7f32;object-fit:cover;margin-bottom:.5rem;"
+                 onerror="this.src='/static/img/default_avatar.png'">
+            <div class="podium-nick">{{ ranking[2].nickname }}</div>
+            <div class="podium-pts">{{ ranking[2].pontos }} pts</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="crown">🏆</div>
+    <div class="winner-label">AGUARDANDO RESULTADO</div>
+    <p style="color:var(--text-muted);">Nenhum participante no ranking ainda.</p>
+    {% endif %}
+
+    <div class="footer-quote">
+        "Você foi feito para o Paraíso!" — <strong>Carlo Acutis</strong>
+    </div>
+</div>
+
+<script>
+// Partículas
+(function() {
+    const c = document.getElementById('particles');
+    for (let i = 0; i < 50; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const isGold = Math.random() > 0.5;
+        p.style.cssText = `
+            left:${Math.random()*100}%;
+            width:${2+Math.random()*5}px; height:${2+Math.random()*5}px;
+            background:${isGold ? 'gold' : '#3B82F6'};
+            animation-delay:${Math.random()*10}s;
+            animation-duration:${6+Math.random()*10}s;
+            opacity:${.1+Math.random()*.4};
+        `;
+        c.appendChild(p);
+    }
+})();
+
+// Confete contínuo
+function confeteContinuo() {
+    const colors = ['#FFD700', '#1E40FF', '#3B82F6', '#DC2626', '#EF4444', '#fff'];
+    confetti({
+        particleCount: 30, spread: 120,
+        origin: { x: Math.random(), y: Math.random() * 0.4 },
+        colors: colors
+    });
+}
+setInterval(confeteContinuo, 2000);
+setTimeout(confeteContinuo, 500);
+
+// Fullscreen
+document.body.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+});
+</script>
+</body>
+</html>

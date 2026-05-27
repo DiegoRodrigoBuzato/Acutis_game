@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Acutis Game{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px; margin:0 auto;">
+
+    <!-- HEADER DO USUÁRIO -->
+    <div class="card card-glow mb-3" style="
+        background: linear-gradient(135deg, rgba(10,15,40,.95), rgba(5,5,16,.9));
+        border-color: rgba(30,64,255,.4);
+    ">
+        <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+            <div style="position:relative;">
+                <img src="{{ current_user.avatar or '/static/img/default_avatar.png' }}"
+                     style="width:80px; height:80px; border-radius:50%;
+                            border:3px solid var(--azul-neon);
+                            box-shadow:var(--glow-azul); object-fit:cover;">
+                <div class="nivel-badge" style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); white-space:nowrap;">
+                    LV {{ current_user.calcular_nivel() }}
+                </div>
+            </div>
+
+            <div style="flex:1; min-width:200px;">
+                <div style="display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin-bottom:.3rem;">
+                    <h2 style="font-family:var(--font-display); font-size:1.6rem; font-weight:700; letter-spacing:2px;">
+                        {{ current_user.nickname }}
+                    </h2>
+                    {% if current_user.streak >= 2 %}
+                    <span class="streak-badge">🔥 x{{ current_user.streak }} STREAK</span>
+                    {% endif %}
+                </div>
+                <p style="color:var(--text-muted); font-size:.9rem;">{{ current_user.nome }}</p>
+
+                <!-- Barra de XP -->
+                <div style="margin-top:.75rem;">
+                    <div style="display:flex; justify-content:space-between; font-size:.75rem; color:var(--text-muted); margin-bottom:.3rem;">
+                        <span>XP {{ current_user.xp }}</span>
+                        <span>Próximo nível: {{ current_user.xp_para_proximo_nivel() }} XP</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width:{{ progresso }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:right;">
+                <div style="font-family:var(--font-display); font-size:3rem; font-weight:700;
+                            color:var(--azul-neon); text-shadow:var(--glow-azul); line-height:1;">
+                    {{ current_user.pontos }}
+                </div>
+                <div style="color:var(--text-muted); font-size:.8rem; letter-spacing:1px;">PONTOS</div>
+                {% if posicao %}
+                <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:600; margin-top:.3rem;">
+                    {% if posicao == 1 %}🥇{% elif posicao == 2 %}🥈{% elif posicao == 3 %}🥉{% else %}#{% endif %}
+                    {{ posicao }}º lugar
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Badges -->
+        {% set badges = current_user.badges.all() %}
+        {% if badges %}
+        <div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+            {% for pb in badges %}
+            <span class="badge-chip" title="{{ pb.badge.descricao }}">
+                {{ pb.badge.icone }} {{ pb.badge.nome }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+
+        <!-- RANKING AO VIVO -->
+        <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                <h3 class="section-title" style="font-size:1.3rem; margin-bottom:0;">
+                    <span class="accent">RANKING</span> AO VIVO
+                </h3>
+                <span id="rankingStatus" style="
+                    display:inline-flex; align-items:center; gap:.4rem;
+                    font-size:.75rem; color:var(--text-muted);
+                    font-family:var(--font-mono);
+                ">
+                    <span style="width:8px; height:8px; background:var(--vermelho-neon);
+                                 border-radius:50%; animation:pulse-blue 1.5s infinite;"></span>
+                    LIVE
+                </span>
+            </div>
+
+            <div id="rankingList">
+                {% for p in ranking %}
+                <div class="ranking-item pos-{{ p.posicao if p.posicao <= 3 else '' }}"
+                     id="rank-{{ p.id }}" data-pos="{{ p.posicao }}">
+                    <div class="rank-pos">
+                        {% if p.posicao == 1 %}🥇
+                        {% elif p.posicao == 2 %}🥈
+                        {% elif p.posicao == 3 %}🥉
+                        {% else %}#{{ p.posicao }}{% endif %}
+                    </div>
+                    <img src="{{ p.avatar }}" class="rank-avatar"
+                         onerror="this.src='/static/img/default_avatar.png'">
+                    <div class="rank-info">
+                        <div class="rank-nickname">{{ p.nickname }}</div>
+                        <div class="rank-nome">{{ p.nome }}</div>
+                        <div class="rank-badges">
+                            {% for b in p.badges %}{{ b.icone }}{% endfor %}
+                        </div>
+                    </div>
+                    <div class="rank-pontos">
+                        {{ p.pontos }}
+                        <span>pts</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted" style="padding:2rem;">
+                    Ninguém no ranking ainda. Seja o primeiro! 🚀
+                </div>
+                {% endfor %}
+            </div>
+
+            <a href="{{ url_for('main.ranking') }}" class="btn btn-outline btn-block mt-2">
+                <i class="fas fa-list"></i> Ver ranking completo
+            </a>
+        </div>
+
+        <!-- LATERAL: STATS + SCANS RECENTES -->
+        <div>
+            <!-- Stats -->
+            <div class="stats-grid mb-3">
+                <div class="stat-card">
+                    <div class="stat-value">{{ current_user.pontos }}</div>
+                    <div class="stat-label">Pontos Totais</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ current_user.calcular_nivel() }}</div>
+                    <div class="stat-label">Nível</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ current_user.scans.count() }}</div>
+                    <div class="stat-label">Atividades</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color:var(--vermelho-neon);">{{ current_user.streak }}</div>
+                    <div class="stat-label">🔥 Streak</div>
+                </div>
+            </div>
+
+            <!-- Scans recentes -->
+            <div class="card">
+                <h4 style="font-family:var(--font-display); font-size:1rem; letter-spacing:2px; margin-bottom:1rem; color:var(--text-muted);">
+                    <i class="fas fa-history"></i> ATIVIDADES RECENTES
+                </h4>
+
+                {% if scans_recentes %}
+                {% for scan in scans_recentes %}
+                <div style="
+                    display:flex; align-items:center; justify-content:space-between;
+                    padding:.6rem 0;
+                    border-bottom:1px solid rgba(30,64,255,.08);
+                    {% if not loop.last %}{% endif %}
+                ">
+                    <div>
+                        <div style="font-size:.9rem; font-weight:600;">{{ scan.atividade.nome }}</div>
+                        <div style="font-size:.75rem; color:var(--text-muted);">
+                            {{ scan.timestamp.strftime('%d/%m %H:%M') }}
+                        </div>
+                    </div>
+                    <div style="font-family:var(--font-display); color:var(--azul-neon); font-weight:700;">
+                        +{{ scan.pontos_ganhos }}
+                        {% if scan.streak_bonus > 0 %}
+                        <span style="font-size:.7rem; color:var(--vermelho-neon);">+{{ scan.streak_bonus }}🔥</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center" style="padding:1rem 0; font-size:.9rem;">
+                    Nenhuma atividade ainda.<br>Vá escanear os QR Codes! 📱
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Dica -->
+            <div class="card mt-2" style="border-color:rgba(220,38,38,.2); background:rgba(220,38,38,.05);">
+                <p style="font-size:.85rem; color:var(--text-muted); text-align:center;">
+                    💡 <strong style="color:var(--vermelho-neon);">Dica:</strong>
+                    Faça atividades em sequência para ativar o streak e ganhar bônus de pontos! 🔥
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── SocketIO Ranking em Tempo Real ────────────────────────────
+const socket = io();
+const meuId = {{ current_user.id }};
+
+// Estado anterior das posições para animar mudanças
+let posicoesAnteriores = {};
+
+// Ler posições iniciais
+document.querySelectorAll('[data-pos]').forEach(el => {
+    const id = el.id.replace('rank-', '');
+    posicoesAnteriores[id] = parseInt(el.dataset.pos);
+});
+
+socket.on('connect', () => {
+    console.log('🔗 Conectado ao ranking em tempo real');
+    socket.emit('solicitar_ranking');
+});
+
+socket.on('ranking_update', (data) => {
+    if (data.ranking) {
+        atualizarRanking(data.ranking);
+    }
+
+    if (data.evento && data.evento.participante_id) {
+        const ev = data.evento;
+
+        // Notificação se foi o usuário atual
+        if (ev.participante_id === meuId) {
+            mostrarNotificacaoPontos(ev.pontos, ev.streak);
+
+            if (ev.nova_posicao <= 3 && ev.posicao_anterior > 3) {
+                dispararConfete();
+            }
+        }
+
+        // Mostrar toast de quem pontuou
+        mostrarToast(ev);
+    }
+});
+
+function atualizarRanking(ranking) {
+    const container = document.getElementById('rankingList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    ranking.forEach((p, i) => {
+        const posAnterior = posicoesAnteriores[p.id];
+        const subiu = posAnterior && p.posicao < posAnterior;
+        const desceu = posAnterior && p.posicao > posAnterior;
+
+        const medalha = p.posicao === 1 ? '🥇' : p.posicao === 2 ? '🥈' : p.posicao === 3 ? '🥉' : `#${p.posicao}`;
+        const posClass = p.posicao <= 3 ? `pos-${p.posicao}` : '';
+        const aniClass = subiu ? 'rank-rising' : desceu ? 'rank-falling' : '';
+        const isMe = p.id === meuId ? 'border-color:rgba(30,64,255,.6); background:rgba(30,64,255,.08);' : '';
+
+        const badgeIcons = p.badges.map(b => b.icone).join('');
+
+        container.innerHTML += `
+        <div class="ranking-item ${posClass} ${aniClass}" id="rank-${p.id}"
+             data-pos="${p.posicao}" style="animation-delay:${i * 0.05}s; ${isMe}">
+            <div class="rank-pos">${medalha}</div>
+            <img src="${p.avatar}" class="rank-avatar"
+                 onerror="this.src='/static/img/default_avatar.png'">
+            <div class="rank-info">
+                <div class="rank-nickname">${p.nickname}${p.id === meuId ? ' <span style="color:var(--azul-neon);font-size:.7rem;">YOU</span>' : ''}</div>
+                <div class="rank-nome">${p.nome}</div>
+                <div class="rank-badges">${badgeIcons}</div>
+            </div>
+            <div class="rank-pontos">
+                ${p.pontos}
+                <span>pts</span>
+            </div>
+        </div>`;
+
+        posicoesAnteriores[p.id] = p.posicao;
+    });
+}
+
+function mostrarNotificacaoPontos(pontos, streak) {
+    const el = document.createElement('div');
+    el.className = 'point-notification';
+    el.innerHTML = `
+        <div style="font-size:1rem; color:var(--text-muted); margin-bottom:.3rem;">PONTOS GANHOS</div>
+        <div class="pts">+${pontos}</div>
+        ${streak >= 2 ? `<div style="color:var(--vermelho-neon); margin-top:.3rem;">🔥 STREAK x${streak}</div>` : ''}
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+function mostrarToast(ev) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position:fixed; bottom:1.5rem; left:50%;
+        transform:translateX(-50%);
+        background:rgba(10,20,50,.95);
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:.75rem 1.5rem;
+        font-family:var(--font-display);
+        font-size:.95rem;
+        color:var(--text-white);
+        z-index:9998;
+        box-shadow:0 4px 30px rgba(0,0,0,.5);
+        animation:slideInRight .4s ease;
+        text-align:center;
+    `;
+    toast.innerHTML = `
+        ⚡ <strong style="color:var(--azul-neon);">${ev.participante}</strong>
+        completou <em>${ev.atividade}</em>
+        <strong style="color:gold;">+${ev.pontos}pts</strong>
+        ${ev.streak >= 2 ? `🔥x${ev.streak}` : ''}
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+function dispararConfete() {
+    confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#1E40FF', '#3B82F6', '#DC2626', '#EF4444', '#FFD700']
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Admin — Acutis Game{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px; margin:0 auto;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 class="section-title"><span class="accent-red">PAINEL</span> <span class="accent">ADMIN</span></h1>
+            <p class="text-muted">Gerencie o evento Acutis Game</p>
+        </div>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+            <a href="{{ url_for('admin.atividades') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-qrcode"></i> Atividades
+            </a>
+            <a href="{{ url_for('admin.participantes') }}" class="btn btn-outline btn-sm">
+                <i class="fas fa-users"></i> Participantes
+            </a>
+            <a href="{{ url_for('admin.scans') }}" class="btn btn-outline btn-sm">
+                <i class="fas fa-history"></i> Scans
+            </a>
+            <a href="{{ url_for('main.telao') }}" class="btn btn-outline btn-sm" target="_blank">
+                <i class="fas fa-tv"></i> Telão
+            </a>
+            <a href="{{ url_for('main.vencedor') }}" class="btn btn-outline btn-sm" target="_blank">
+                <i class="fas fa-trophy"></i> Vencedor
+            </a>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid mb-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_participantes }}</div>
+            <div class="stat-label">Participantes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color:var(--vermelho-neon);">{{ total_atividades }}</div>
+            <div class="stat-label">Atividades</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color:gold;">{{ total_scans }}</div>
+            <div class="stat-label">Scans Realizados</div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+
+        <!-- TOP 10 RANKING -->
+        <div class="card">
+            <h3 style="font-family:var(--font-display); font-size:1.1rem; letter-spacing:2px; margin-bottom:1rem;">
+                🏆 TOP 10 RANKING
+            </h3>
+            {% for p in ranking %}
+            <div class="ranking-item pos-{{ p.posicao if p.posicao <= 3 else '' }}" style="margin-bottom:.4rem;">
+                <div class="rank-pos">
+                    {% if p.posicao == 1 %}🥇{% elif p.posicao == 2 %}🥈{% elif p.posicao == 3 %}🥉{% else %}#{{ p.posicao }}{% endif %}
+                </div>
+                <div class="rank-info">
+                    <div class="rank-nickname">{{ p.nickname }}</div>
+                </div>
+                <div class="rank-pontos">{{ p.pontos }}<span>pts</span></div>
+            </div>
+            {% else %}
+            <p class="text-muted text-center" style="padding:1rem;">Nenhum participante ainda.</p>
+            {% endfor %}
+        </div>
+
+        <!-- AÇÕES RÁPIDAS -->
+        <div>
+            <div class="card mb-2">
+                <h3 style="font-family:var(--font-display); font-size:1.1rem; letter-spacing:2px; margin-bottom:1rem;">
+                    ⚡ AÇÕES RÁPIDAS
+                </h3>
+                <div style="display:flex; flex-direction:column; gap:.75rem;">
+                    <a href="{{ url_for('admin.exportar_csv') }}" class="btn btn-primary btn-block">
+                        <i class="fas fa-download"></i> Exportar Ranking CSV
+                    </a>
+                    <a href="{{ url_for('admin.atividades') }}" class="btn btn-outline btn-block">
+                        <i class="fas fa-plus"></i> Criar Nova Atividade
+                    </a>
+                    <form method="POST" action="{{ url_for('admin.resetar_ranking') }}"
+                          onsubmit="return confirm('⚠️ ATENÇÃO: Isso irá zerar TODOS os pontos e scans. Tem certeza?');">
+                        <button type="submit" class="btn btn-danger btn-block">
+                            <i class="fas fa-redo"></i> Resetar Ranking
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="border-color:rgba(255,215,0,.2); background:rgba(255,215,0,.03);">
+                <p style="font-size:.85rem; color:var(--text-muted); text-align:center;">
+                    ✝️ <em>"Estar sempre unido a Jesus: este é o meu programa de vida."</em>
+                    <br>— Carlo Acutis
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

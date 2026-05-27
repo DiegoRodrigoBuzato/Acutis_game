@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+.env
+database/acutis_game.db
+static/qrcodes/*.png

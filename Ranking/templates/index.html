@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Acutis Game — Evento Gamer Católico{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero" style="padding-top: 5rem;">
+    <div class="hero-badge" style="
+        display:inline-flex; align-items:center; gap:.5rem;
+        background:rgba(30,64,255,.12); border:1px solid var(--border);
+        border-radius:100px; padding:.35rem 1.2rem; margin-bottom:2rem;
+        font-size:.85rem; color:var(--azul-claro); letter-spacing:2px;
+        text-transform:uppercase; font-family:var(--font-display);
+    ">
+        <span>✝</span> Evento Presencial · Ranking em Tempo Real
+    </div>
+
+    <h1 class="hero-title">
+        <span class="line-blue">ACUTIS GAME</span>
+        <span class="line-red">Carlo Acutis 1991–2006</span>
+    </h1>
+
+    <p class="hero-sub">
+        Complete atividades, escaneie QR Codes e suba no ranking ao vivo.
+        <br>
+        <em style="color:var(--azul-claro);">"Você foi feito para o Paraíso — não perca de vista o objetivo!"</em>
+    </p>
+
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-gamepad"></i> Meu Dashboard
+            </a>
+            <a href="{{ url_for('main.ranking') }}" class="btn btn-outline btn-lg">
+                <i class="fas fa-trophy"></i> Ver Ranking
+            </a>
+        {% else %}
+            <a href="{{ url_for('auth.cadastro') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus"></i> Participar Agora
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Já tenho conta
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Contador de participantes -->
+    <div style="margin-top:3rem; color:var(--text-muted); font-size:.9rem;">
+        <span style="color:var(--azul-neon); font-family:var(--font-display); font-size:1.5rem; font-weight:700;">
+            {{ total_participantes }}
+        </span>
+        participantes cadastrados
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section style="max-width:1000px; margin:0 auto; padding:2rem 0 4rem;">
+    <div class="grid-3" style="gap:1.5rem;">
+        <div class="card" style="text-align:center;">
+            <div style="font-size:2.5rem; margin-bottom:1rem;">📱</div>
+            <h3 style="font-family:var(--font-display); font-size:1.2rem; letter-spacing:2px; margin-bottom:.5rem;">
+                SCANEIE QR CODES
+            </h3>
+            <p style="color:var(--text-muted); font-size:.9rem; line-height:1.6;">
+                QR Codes espalhados pelo evento. Cada scan vale pontos e desbloqueia conquistas especiais.
+            </p>
+        </div>
+
+        <div class="card" style="text-align:center; border-color:rgba(220,38,38,.3);">
+            <div style="font-size:2.5rem; margin-bottom:1rem;">🏆</div>
+            <h3 style="font-family:var(--font-display); font-size:1.2rem; letter-spacing:2px; margin-bottom:.5rem; color:var(--vermelho-neon);">
+                RANKING AO VIVO
+            </h3>
+            <p style="color:var(--text-muted); font-size:.9rem; line-height:1.6;">
+                Ranking atualizado em tempo real. Suba posições e veja seu nome no telão principal.
+            </p>
+        </div>
+
+        <div class="card" style="text-align:center; border-color:rgba(255,215,0,.2);">
+            <div style="font-size:2.5rem; margin-bottom:1rem;">⚡</div>
+            <h3 style="font-family:var(--font-display); font-size:1.2rem; letter-spacing:2px; margin-bottom:.5rem; color:gold;">
+                STREAKS & BADGES
+            </h3>
+            <p style="color:var(--text-muted); font-size:.9rem; line-height:1.6;">
+                Suba de nível, ganhe badges exclusivos e faça combos para multiplicar seus pontos.
+            </p>
+        </div>
+    </div>
+
+    <!-- Citação Carlo Acutis -->
+    <div class="card mt-4" style="
+        text-align:center;
+        border-color:rgba(255,215,0,.2);
+        background:linear-gradient(135deg, rgba(10,15,40,.9), rgba(5,5,16,.9));
+        padding:2.5rem;
+    ">
+        <div style="font-size:2rem; margin-bottom:1rem;">✝️</div>
+        <blockquote style="
+            font-family:var(--font-display);
+            font-size:1.4rem;
+            font-weight:600;
+            letter-spacing:1px;
+            color:var(--text-white);
+            font-style:italic;
+            line-height:1.5;
+            margin-bottom:1rem;
+        ">
+            "A nossa meta é o infinito, não o finito.<br>
+            O infinito é o nosso pátrio."
+        </blockquote>
+        <p style="color:var(--text-muted); font-size:.85rem; letter-spacing:2px; text-transform:uppercase;">
+            — Carlo Acutis
+        </p>
+    </div>
+</section>
+{% endblock %}

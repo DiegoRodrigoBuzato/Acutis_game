@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ atividade.nome }} — Acutis Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --azul: #1E40FF; --azul-n: #3B82F6; --azul-c: #60A5FA; --azul-e: #0F1F6B;
+            --red: #DC2626; --red-n: #EF4444;
+            --bg: #050510;
+            --border: rgba(30,64,255,.25);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: #F0F4FF;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            background-image:
+                linear-gradient(rgba(30,64,255,.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30,64,255,.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+        /* Partículas */
+        .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .particle { position: absolute; bottom: -10px; border-radius: 50%; animation: floatUp linear infinite; }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: .6; }
+            90% { opacity: .1; }
+            100% { transform: translateY(-110vh); opacity: 0; }
+        }
+
+        .container {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 420px;
+            text-align: center;
+        }
+
+        /* Logo */
+        .logo {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.4rem; font-weight: 700;
+            letter-spacing: 2px; margin-bottom: 1.5rem;
+            color: rgba(240,244,255,.6);
+        }
+        .logo .cross { color: var(--azul-n); }
+        .logo .accent { color: var(--azul-n); }
+
+        /* Card de atividade */
+        .activity-card {
+            background: rgba(15,20,50,.85);
+            border: 2px solid var(--azul-n);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 40px rgba(30,64,255,.2), 0 0 80px rgba(30,64,255,.08);
+            animation: cardAppear .6s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes cardAppear {
+            from { opacity: 0; transform: scale(.8) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .activity-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+
+        .activity-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            margin-bottom: .3rem;
+        }
+        .activity-desc {
+            color: rgba(240,244,255,.5);
+            font-size: .9rem; margin-bottom: 1.2rem;
+        }
+
+        .points-badge {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: linear-gradient(135deg, var(--azul-e), rgba(30,64,255,.3));
+            border: 1px solid var(--azul-n);
+            border-radius: 100px;
+            padding: .5rem 1.5rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.8rem; font-weight: 700;
+            color: var(--azul-c);
+            margin-bottom: 1.5rem;
+            animation: pulseGlow 2s ease infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(30,64,255,.3); }
+            50% { box-shadow: 0 0 30px rgba(30,64,255,.6); }
+        }
+        .points-badge small { font-size: .9rem; color: rgba(240,244,255,.5); font-weight: 400; }
+
+        /* Divider */
+        .divider {
+            border: none; border-top: 1px solid var(--border);
+            margin: 1.5rem 0;
+        }
+
+        /* Form */
+        .form-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem; font-weight: 600;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(240,244,255,.5);
+            margin-bottom: 1rem;
+        }
+        .form-group { margin-bottom: 1rem; text-align: left; }
+        .form-label {
+            display: block;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: .8rem; font-weight: 600;
+            letter-spacing: 1px; color: rgba(240,244,255,.5);
+            text-transform: uppercase;
+            margin-bottom: .4rem;
+        }
+        .form-control {
+            width: 100%;
+            background: rgba(10,15,40,.8);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: .85rem 1rem;
+            color: #F0F4FF;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.05rem;
+            outline: none;
+            transition: all .3s ease;
+        }
+        .form-control:focus {
+            border-color: var(--azul-n);
+            box-shadow: 0 0 0 3px rgba(30,64,255,.15);
+        }
+        .form-control::placeholder { color: rgba(240,244,255,.25); }
+
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: .6rem;
+            width: 100%; padding: 1rem;
+            border: none; border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            cursor: pointer; transition: all .3s ease;
+            text-decoration: none;
+        }
+        .btn-scan {
+            background: linear-gradient(135deg, var(--azul), #2563EB);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(30,64,255,.4);
+        }
+        .btn-scan:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(30,64,255,.6); }
+        .btn-scan:active { transform: translateY(0); }
+        .btn-scan:disabled {
+            opacity: .5; cursor: not-allowed;
+            transform: none !important; box-shadow: none !important;
+        }
+
+        .btn-cadastro {
+            background: transparent;
+            color: var(--azul-c);
+            border: 1px solid var(--border);
+            font-size: 1rem; margin-top: .75rem;
+        }
+        .btn-cadastro:hover { background: rgba(30,64,255,.1); border-color: var(--azul-n); }
+
+        /* Mensagem de erro */
+        .msg { padding: .75rem 1rem; border-radius: 10px; font-size: .9rem; margin-bottom: 1rem; }
+        .msg-error { background: rgba(220,38,38,.15); border: 1px solid rgba(220,38,38,.4); color: #fca5a5; }
+        .msg-warning { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #fcd34d; }
+
+        /* ── TELA DE SUCESSO ──────────────────────── */
+        .success-screen { display: none; }
+        .success-screen.active { display: block; }
+
+        .success-card {
+            background: rgba(15,20,50,.85);
+            border: 2px solid #22c55e;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 0 40px rgba(34,197,94,.2);
+            animation: cardAppear .6s cubic-bezier(.34,1.56,.64,1);
+        }
+
+        .success-check {
+            font-size: 4rem; margin-bottom: .5rem;
+            animation: bounceIn .6s ease;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .success-pts {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 4rem; font-weight: 700;
+            color: var(--azul-c);
+            text-shadow: 0 0 30px rgba(30,64,255,.6);
+            line-height: 1;
+        }
+        .success-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem; font-weight: 600;
+            letter-spacing: 3px; color: #86efac;
+            text-transform: uppercase; margin-bottom: .5rem;
+        }
+        .success-streak {
+            color: var(--red-n);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem; font-weight: 700;
+            margin-top: .3rem;
+        }
+        .success-badge {
+            display: inline-flex; align-items: center; gap: .3rem;
+            background: rgba(30,64,255,.15);
+            border: 1px solid var(--border);
+            border-radius: 100px; padding: .3rem .8rem;
+            font-size: .85rem; color: var(--azul-c);
+            margin: .2rem;
+        }
+
+        .success-ranking {
+            margin-top: 1.5rem; padding-top: 1rem;
+            border-top: 1px solid rgba(34,197,94,.2);
+        }
+        .success-ranking .rank-info {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem; color: rgba(240,244,255,.6);
+        }
+        .success-ranking .rank-pos {
+            font-size: 2rem; font-weight: 700;
+            color: gold;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(34,197,94,.3);
+            margin-top: 1.5rem;
+        }
+        .btn-dashboard:hover { box-shadow: 0 6px 30px rgba(34,197,94,.5); }
+
+        /* Quote */
+        .quote {
+            margin-top: 1.5rem;
+            font-size: .8rem; color: rgba(240,244,255,.3);
+            font-style: italic;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 24px; height: 24px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+
+<div class="container">
+    <div class="logo">
+        <span class="cross">✝</span> ACUTIS <span class="accent">GAME</span>
+    </div>
+
+    <!-- ═══ TELA DE LOGIN + SCAN ═══ -->
+    <div id="loginScreen">
+        <div class="activity-card">
+            <div class="activity-icon">📱</div>
+            <div class="activity-name">{{ atividade.nome }}</div>
+            <div class="activity-desc">{{ atividade.descricao or 'Complete esta atividade para ganhar pontos!' }}</div>
+
+            <div class="points-badge">
+                +{{ atividade.pontos }} <small>pontos</small>
+            </div>
+
+            {% if erro %}
+            <div class="msg msg-error">{{ erro }}</div>
+            {% endif %}
+
+            {% if ja_escaneou %}
+            <div class="msg msg-warning">
+                ⚠️ Você já completou esta atividade!
+            </div>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-scan" style="margin-top:1rem;">
+                <i class="fas fa-gamepad"></i> IR PARA DASHBOARD
+            </a>
+            {% elif current_user.is_authenticated %}
+                {# Usuário já logado — botão direto para pontuar #}
+                <p style="color:rgba(240,244,255,.5); font-size:.9rem; margin-bottom:1rem;">
+                    Logado como <strong style="color:var(--azul-c);">{{ current_user.nickname }}</strong>
+                </p>
+                <form method="POST" id="scanForm">
+                    <input type="hidden" name="modo" value="logado">
+                    <button type="submit" class="btn btn-scan" id="btnScan">
+                        <i class="fas fa-bolt"></i> PONTUAR AGORA
+                    </button>
+                </form>
+            {% else %}
+                {# Usuário NÃO logado — formulário de identificação #}
+                <hr class="divider">
+                <div class="form-title">
+                    <i class="fas fa-user"></i> Identifique-se para pontuar
+                </div>
+
+                <form method="POST" id="scanForm">
+                    <input type="hidden" name="modo" value="identificar">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-at"></i> Nickname ou E-mail</label>
+                        <input type="text" name="identificador" class="form-control"
+                               placeholder="Seu nickname ou e-mail" required autocomplete="username"
+                               autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-lock"></i> Senha</label>
+                        <input type="password" name="senha" class="form-control"
+                               placeholder="Sua senha" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-scan" id="btnScan">
+                        <i class="fas fa-bolt"></i> PONTUAR
+                    </button>
+                </form>
+
+                <a href="{{ url_for('auth.cadastro') }}?next={{ request.url }}" class="btn btn-cadastro">
+                    <i class="fas fa-user-plus"></i> Não tem conta? Cadastre-se
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ═══ TELA DE SUCESSO ═══ -->
+    <div id="successScreen" class="success-screen {% if sucesso %}active{% endif %}">
+        {% if sucesso %}
+        <div class="success-card">
+            <div class="success-check">✅</div>
+            <div class="success-label">Atividade Completada!</div>
+            <div class="activity-name" style="font-size:1.2rem; margin-bottom:.5rem;">{{ atividade.nome }}</div>
+
+            <div class="success-pts">+{{ sucesso.pontos_totais }}</div>
+            <div style="color:rgba(240,244,255,.4); font-size:.8rem;">pontos</div>
+
+            {% if sucesso.streak >= 2 %}
+            <div class="success-streak">🔥 STREAK x{{ sucesso.streak }}! +{{ sucesso.bonus }} bônus</div>
+            {% endif %}
+
+            {% if sucesso.badges_novos %}
+            <div style="margin-top:.8rem;">
+                {% for b in sucesso.badges_novos %}
+                <span class="success-badge">{{ b.icone }} {{ b.nome }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="success-ranking">
+                <div class="rank-info">Sua posição no ranking</div>
+                <div class="rank-pos">
+                    {% if sucesso.posicao == 1 %}🥇{% elif sucesso.posicao == 2 %}🥈{% elif sucesso.posicao == 3 %}🥉{% else %}#{% endif %}
+                    {{ sucesso.posicao }}º
+                </div>
+                <div style="color:rgba(240,244,255,.4); font-size:.85rem;">
+                    Total: <strong style="color:var(--azul-c);">{{ sucesso.pontos_total_user }}</strong> pontos
+                </div>
+            </div>
+
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-dashboard">
+                <i class="fas fa-gamepad"></i> VER MEU DASHBOARD
+            </a>
+            <a href="{{ url_for('main.ranking') }}" class="btn btn-cadastro" style="margin-top:.5rem;">
+                <i class="fas fa-trophy"></i> VER RANKING
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="quote">
+        "Você foi feito para o Paraíso!" — Carlo Acutis ✝️
+    </div>
+</div>
+
+<script>
+// Partículas
+(function() {
+    const c = document.getElementById('particles');
+    for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const isRed = Math.random() > 0.7;
+        p.style.cssText = `
+            left:${Math.random()*100}%;
+            width:${2+Math.random()*3}px; height:${2+Math.random()*3}px;
+            background:${isRed ? '#EF4444' : '#3B82F6'};
+            animation-delay:${Math.random()*8}s;
+            animation-duration:${8+Math.random()*10}s;
+            opacity:${.1+Math.random()*.3};
+        `;
+        c.appendChild(p);
+    }
+})();
+
+// Prevenir duplo submit
+const form = document.getElementById('scanForm');
+const btn = document.getElementById('btnScan');
+if (form && btn) {
+    form.addEventListener('submit', function() {
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="display:inline-block;width:20px;height:20px;"></div> PROCESSANDO...';
+    });
+}
+
+// Confete no sucesso
+{% if sucesso %}
+(function() {
+    // Se estava no login screen, esconder
+    document.getElementById('loginScreen').style.display = 'none';
+
+    const colors = ['#1E40FF', '#3B82F6', '#DC2626', '#EF4444', '#FFD700', '#22c55e'];
+    setTimeout(() => {
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors: colors });
+    }, 300);
+    {% if sucesso.posicao <= 3 %}
+    setTimeout(() => {
+        confetti({ particleCount: 120, spread: 100, origin: { y: 0.5 }, colors: colors });
+    }, 800);
+    {% endif %}
+})();
+{% endif %}
+</script>
+</body>
+</html>
